@@ -1,0 +1,43 @@
+# Node.js / npm
+node_modules/
+npm-debug.log
+package-lock.json
+
+# React / Frontend build files
+client/node_modules/
+client/build/
+client/package-lock.json
+client/dist/
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Build artifacts
+dist/
+*.out
+
+# Temporary files
+*.bak
+*.tmp
+*.swp
+
+# Coverage reports
+coverage/
