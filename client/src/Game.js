@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import './App.css';
 
@@ -23,6 +23,16 @@ const initialPieces = {
     bomb: 2,
 };
 
+const pieceInfo = {
+    flag: { name: 'Flag', description: 'Capture this to win!', moves: 'Cannot move' },
+    marshal: { name: 'Marshal', description: 'Strongest piece, rank 10', moves: 'One square' },
+    spy: { name: 'Spy', description: 'Can defeat Marshal if attacking', moves: 'One square' },
+    scout: { name: 'Scout', description: 'Fast mover, rank 2', moves: 'Any straight line' },
+    miner: { name: 'Miner', description: 'Defuses bombs, rank 3', moves: 'One square' },
+    bomb: { name: 'Bomb', description: 'Destroys most attackers', moves: 'Cannot move' },
+};
+
+
 function Game({ lobbyId, player, socket }) {
     const [board, setBoard] = useState(Array(7).fill(null).map(() => Array(7).fill(null)));
     const [terrain] = useState(() => {
@@ -38,13 +48,32 @@ function Game({ lobbyId, player, socket }) {
     const [readyPlayers, setReadyPlayers] = useState([]);
     const [piecesLeft, setPiecesLeft] = useState({ ...initialPieces });
     const [capturedPieces, setCapturedPieces] = useState({ 1: [], 2: [] });
+    const [turnTimeLeft, setTurnTimeLeft] = useState(30);
+    const prevCapturedLengths = useRef({ 1: 0, 2: 0 });
+    const [overlayVisible, setOverlayVisible] = useState(false);
+    const [selectedPiece, setSelectedPiece] = useState(null);
+    const handleContextMenu = (e, piece) => {
+        e.preventDefault();
+        if (piece) {
+            setSelectedPiece(piece);
+            setOverlayVisible(true);
+        }
+    };
+    const playSound = (action) => {
+        const soundFiles = {
+            place: '/sounds/place.mp3',
+            move: '/sounds/move.mp3',
+            capture: '/sounds/capture.mp3',
+            timeout: '/sounds/timeout.mp3',
+        };
+        const audio = new Audio(soundFiles[action]);
+        audio.play().catch((error) => console.log('Audio play failed:', error));
+    };
 
     useEffect(() => {
         socket.on('boardUpdate', (newBoard) => setBoard(newBoard));
         socket.on('turnUpdate', (newTurn) => setTurn(newTurn));
-        socket.on('piecesLeftUpdate', (newPiecesLeft) => {
-            setPiecesLeft(newPiecesLeft);
-        });
+        socket.on('piecesLeftUpdate', (newPiecesLeft) => setPiecesLeft(newPiecesLeft));
         socket.on('phaseUpdate', (newPhase) => {
             setPhase(newPhase);
             if (newPhase === 'placement') {
@@ -55,6 +84,13 @@ function Game({ lobbyId, player, socket }) {
         socket.on('readyUpdate', (players) => setReadyPlayers(players));
         socket.on('capturedUpdate', (captured) => setCapturedPieces(captured));
         socket.on('gameOver', (winner) => alert(`Game Over! Player ${winner} wins!`));
+
+        socket.on('timeout', ({ player: timedOutPlayer }) => {
+            if (timedOutPlayer === player) {
+                playSound('timeout');
+                // No alert needed; turn switches automatically via turnUpdate
+            }
+        });
         return () => {
             socket.off('boardUpdate');
             socket.off('turnUpdate');
@@ -63,8 +99,38 @@ function Game({ lobbyId, player, socket }) {
             socket.off('capturedUpdate');
             socket.off('gameOver');
         };
+    }, [player, socket]);
 
-    }, [socket]);
+    useEffect(() => {
+        if (phase === 'playing' && turn === player) {
+            setTurnTimeLeft(30);
+            const timer = setInterval(() => {
+                setTurnTimeLeft((prev) => {
+                    if (prev <= 3) {
+                        clearInterval(timer);
+                        playSound('timeout');
+                        alert("Time's up!");
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [turn, phase, player]);
+
+    useEffect(() => {
+        if (
+            capturedPieces[1].length > prevCapturedLengths.current[1] ||
+            capturedPieces[2].length > prevCapturedLengths.current[2]
+        ) {
+            playSound('capture');
+        }
+        prevCapturedLengths.current = {
+            1: capturedPieces[1].length,
+            2: capturedPieces[2].length,
+        };
+    }, [capturedPieces]);
 
     const handleDragStartPiece = (e, type) => {
         e.dataTransfer.setData('pieceType', type);
@@ -86,14 +152,21 @@ function Game({ lobbyId, player, socket }) {
         if (phase === 'placement' && pieceType) {
             if (isValidPlacement(toX, toY) && piecesLeft[pieceType] > 0 && terrain[toX][toY] !== 1) {
                 socket.emit('placePiece', { x: toX, y: toY, type: pieceType });
+                playSound('place');
                 e.target.classList.remove('drop-valid');
-
             }
         } else if (phase === 'playing' && fromX && fromY) {
             const fromXInt = parseInt(fromX);
             const fromYInt = parseInt(fromY);
             if (turn === player && terrain[toX][toY] !== 1) {
                 socket.emit('move', { fromX: fromXInt, fromY: fromYInt, toX, toY });
+                playSound('move');
+                // Animate the piece
+                const cell = document.querySelector(`.cell[data-x="${toX}"][data-y="${toY}"]`);
+                if (cell) {
+                    cell.classList.add('moving');
+                    setTimeout(() => cell.classList.remove('moving'), 500); // Match transition duration
+                }
             }
         }
     };
@@ -131,6 +204,7 @@ function Game({ lobbyId, player, socket }) {
                                     key={type}
                                     draggable
                                     onDragStart={(e) => handleDragStartPiece(e, type)}
+                                    onContextMenu={(e) => handleContextMenu(e, { type })} // Overlay for reserve pieces
                                     className="piece-draggable"
                                 >
                                     {pieceIcons[type]} x{count}
@@ -146,7 +220,13 @@ function Game({ lobbyId, player, socket }) {
                 <>
                     <div className={`turn-indicator player-${turn}`}>
                         <p>Player {turn}'s Turn</p>
+                        {turn === player && (
+                            <p className={turnTimeLeft <= 10 ? 'time-low' : ''}>
+                                Time left: {turnTimeLeft} seconds
+                            </p>
+                        )}
                     </div>
+
                     <div className="captured-pieces">
                         <h3>Captured Pieces</h3>
                         <div>
@@ -169,20 +249,29 @@ function Game({ lobbyId, player, socket }) {
                     row.map((terrainType, y) => (
                         <div
                             key={`${x}-${y}`}
-                            className={`cell terrain-${terrainType} ${board[x][y] ? `player-${board[x][y].player}` : ''
-                                }`}
+                            className={`cell terrain-${terrainType} ${board[x][y] ? `player-${board[x][y].player}` : ''}`}
                             draggable={phase === 'playing' && board[x][y]?.player === player && turn === player && terrainType !== 1}
                             onDragStart={(e) => handleDragStart(e, x, y)}
                             onDrop={(e) => handleDrop(e, x, y)}
                             onDragOver={handleDragOver}
                             onDragEnter={(e) => handleDragEnter(e, x, y)}
                             onDragLeave={handleDragLeave}
+                            data-x={x}  // Added for animation targeting
+                            data-y={y}  // Added for animation targeting
                         >
                             {board[x][y] ? pieceIcons[board[x][y].type] : ''}
                         </div>
                     ))
                 )}
             </div>
+            {overlayVisible && (
+                <div className="overlay">
+                    <h2>{pieceInfo[selectedPiece.type].name}</h2>
+                    <p>{pieceInfo[selectedPiece.type].description}</p>
+                    <p><strong>Moves:</strong> {pieceInfo[selectedPiece.type].moves}</p>
+                    <button onClick={() => setOverlayVisible(false)}>Close</button>
+                </div>
+            )}
         </div>
     );
 }
