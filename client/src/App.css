@@ -29,16 +29,12 @@
   border: 1px solid #3c2f2f;
   font-size: 36px;
   transition: transform 0.5s ease, background-color 0.2s ease;
-  /* Extended transition */
   position: relative;
-  /* Ensure smooth movement */
 }
 
 .moving {
   transform: scale(1.2) rotate(10deg);
-  /* Example animation: scale up and slight rotate */
   z-index: 10;
-  /* Bring moving piece above others */
 }
 
 .overlay {
@@ -98,11 +94,13 @@
 }
 
 .player-1 {
-  background-color: rgba(255, 0, 0, 0.2);
+  color: #ff0000;
+  /* Red text for Player 1 pieces */
 }
 
 .player-2 {
-  background-color: rgba(0, 0, 255, 0.2);
+  color: #0000ff;
+  /* Blue text for Player 2 pieces */
 }
 
 /* Style draggable pieces in the reserve */
@@ -166,15 +164,16 @@
 }
 
 .captured-pieces {
-  margin-top: 20px;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 250px;
   padding: 10px;
   background-color: #f0e8d0;
   border: 2px solid #8b4513;
   border-radius: 5px;
   text-align: left;
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .captured-pieces h3 {

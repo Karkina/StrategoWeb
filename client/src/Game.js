@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import './App.css';
+import PieceInfoSideBar from './PieceInfoSideBar';
 
 const socket = io('http://localhost:3000');
 
@@ -13,7 +14,6 @@ const pieceIcons = {
     bomb: '💣',
     unknown: '❓',
 };
-
 const initialPieces = {
     flag: 1,
     marshal: 1,
@@ -32,15 +32,14 @@ const pieceInfo = {
     bomb: { name: 'Bomb', description: 'Destroys most attackers', moves: 'Cannot move' },
 };
 
-
 function Game({ lobbyId, player, socket }) {
     const [board, setBoard] = useState(Array(7).fill(null).map(() => Array(7).fill(null)));
     const [terrain] = useState(() => {
         const grid = Array(7).fill(null).map(() => Array(7).fill(0));
-        grid[3][0] = 1; grid[3][2] = 1; grid[3][4] = 1; grid[3][6] = 1;
-        grid[3][1] = 0; grid[3][3] = 0; grid[3][5] = 0;
-        grid[2][2] = 1; grid[2][4] = 1; grid[4][2] = 1; grid[4][4] = 1;
-        grid[0][0] = 2; grid[0][6] = 2; grid[6][0] = 2; grid[6][6] = 2;
+        grid[3][0] = 1; grid[3][2] = 1; grid[3][4] = 1; grid[3][6] = 1; // Lakes
+        grid[3][1] = 0; grid[3][3] = 0; grid[3][5] = 0; // Open middle
+        grid[2][2] = 1; grid[2][4] = 1; grid[4][2] = 1; grid[4][4] = 1; // Additional lakes
+        grid[0][0] = 2; grid[0][6] = 2; grid[6][0] = 2; grid[6][6] = 2; // Corners
         return grid;
     });
     const [turn, setTurn] = useState(1);
@@ -49,9 +48,18 @@ function Game({ lobbyId, player, socket }) {
     const [piecesLeft, setPiecesLeft] = useState({ ...initialPieces });
     const [capturedPieces, setCapturedPieces] = useState({ 1: [], 2: [] });
     const [turnTimeLeft, setTurnTimeLeft] = useState(30);
+    const [hoveredPiece, setHoveredPiece] = useState(null);
     const prevCapturedLengths = useRef({ 1: 0, 2: 0 });
     const [overlayVisible, setOverlayVisible] = useState(false);
     const [selectedPiece, setSelectedPiece] = useState(null);
+
+    // Custom function to get piece icon based on player
+    const getPieceIcon = (piece) => {
+        if (!piece) return '';
+        if (piece.player === 1 && piece.type === 'scout') return 'S'; // Player 1 scouts are "S"
+        return pieceIcons[piece.type];
+    };
+
     const handleContextMenu = (e, piece) => {
         e.preventDefault();
         if (piece) {
@@ -59,6 +67,7 @@ function Game({ lobbyId, player, socket }) {
             setOverlayVisible(true);
         }
     };
+
     const playSound = (action) => {
         const soundFiles = {
             place: '/sounds/place.mp3',
@@ -84,11 +93,9 @@ function Game({ lobbyId, player, socket }) {
         socket.on('readyUpdate', (players) => setReadyPlayers(players));
         socket.on('capturedUpdate', (captured) => setCapturedPieces(captured));
         socket.on('gameOver', (winner) => alert(`Game Over! Player ${winner} wins!`));
-
         socket.on('timeout', ({ player: timedOutPlayer }) => {
             if (timedOutPlayer === player) {
                 playSound('timeout');
-                // No alert needed; turn switches automatically via turnUpdate
             }
         });
         return () => {
@@ -98,6 +105,7 @@ function Game({ lobbyId, player, socket }) {
             socket.off('readyUpdate');
             socket.off('capturedUpdate');
             socket.off('gameOver');
+            socket.off('timeout');
         };
     }, [player, socket]);
 
@@ -161,11 +169,10 @@ function Game({ lobbyId, player, socket }) {
             if (turn === player && terrain[toX][toY] !== 1) {
                 socket.emit('move', { fromX: fromXInt, fromY: fromYInt, toX, toY });
                 playSound('move');
-                // Animate the piece
                 const cell = document.querySelector(`.cell[data-x="${toX}"][data-y="${toY}"]`);
                 if (cell) {
                     cell.classList.add('moving');
-                    setTimeout(() => cell.classList.remove('moving'), 500); // Match transition duration
+                    setTimeout(() => cell.classList.remove('moving'), 500);
                 }
             }
         }
@@ -179,9 +186,7 @@ function Game({ lobbyId, player, socket }) {
         }
     };
 
-    const handleDragLeave = (e) => {
-        e.target.classList.remove('drop-valid');
-    };
+    const handleDragLeave = (e) => e.target.classList.remove('drop-valid');
 
     const isValidPlacement = (x, y) => {
         if (player === 1 && x <= 2 && !board[x][y]) return true;
@@ -190,6 +195,12 @@ function Game({ lobbyId, player, socket }) {
     };
 
     const handleReady = () => socket.emit('ready');
+
+    const handleMouseEnter = (piece) => {
+        if (piece) setHoveredPiece(piece);
+    };
+
+    const handleMouseLeave = () => setHoveredPiece(null);
 
     return (
         <div className="game-container">
@@ -204,7 +215,7 @@ function Game({ lobbyId, player, socket }) {
                                     key={type}
                                     draggable
                                     onDragStart={(e) => handleDragStartPiece(e, type)}
-                                    onContextMenu={(e) => handleContextMenu(e, { type })} // Overlay for reserve pieces
+                                    onContextMenu={(e) => handleContextMenu(e, { type })}
                                     className="piece-draggable"
                                 >
                                     {pieceIcons[type]} x{count}
@@ -216,54 +227,43 @@ function Game({ lobbyId, player, socket }) {
                     <p>Ready Players: {readyPlayers.join(', ')}</p>
                 </div>
             )}
-            {phase === 'playing' && (
-                <>
-                    <div className={`turn-indicator player-${turn}`}>
-                        <p>Player {turn}'s Turn</p>
-                        {turn === player && (
-                            <p className={turnTimeLeft <= 10 ? 'time-low' : ''}>
-                                Time left: {turnTimeLeft} seconds
-                            </p>
+            {phase === 'playing' && (<PieceInfoSideBar
+                player={player}
+                capturedPieces={capturedPieces}
+                pieceInfo={pieceInfo}
+                pieceIcons={pieceIcons}
+                turn={turn}
+                turnTimeLeft={turnTimeLeft}
+                hoveredPiece={hoveredPiece}
+            />)}
+            <div className="game-layout">
+                <div className="board-container">
+                    <div className="board">
+                        {terrain.map((row, x) =>
+                            row.map((terrainType, y) => (
+                                <div
+                                    key={`${x}-${y}`}
+                                    className={`cell terrain-${terrainType} ${board[x][y] ? `player-${board[x][y].player}` : ''}`}
+                                    draggable={phase === 'playing' && board[x][y]?.player === player && turn === player && terrainType !== 1}
+                                    onDragStart={(e) => handleDragStart(e, x, y)}
+                                    onDrop={(e) => handleDrop(e, x, y)}
+                                    onDragOver={handleDragOver}
+                                    onDragEnter={(e) => handleDragEnter(e, x, y)}
+                                    onDragLeave={handleDragLeave}
+                                    onMouseEnter={() => handleMouseEnter(board[x][y])}
+                                    onMouseLeave={handleMouseLeave}
+                                    data-x={x}
+                                    data-y={y}
+                                >
+                                    {board[x][y] ? getPieceIcon(board[x][y]) : ''}
+                                </div>
+                            ))
                         )}
                     </div>
+                </div>
 
-                    <div className="captured-pieces">
-                        <h3>Captured Pieces</h3>
-                        <div>
-                            <strong>Player 1 (Red) Captured:</strong>{' '}
-                            {capturedPieces[1].map((type, index) => (
-                                <span key={index}>{pieceIcons[type]}</span>
-                            ))}
-                        </div>
-                        <div>
-                            <strong>Player 2 (Blue) Captured:</strong>{' '}
-                            {capturedPieces[2].map((type, index) => (
-                                <span key={index}>{pieceIcons[type]}</span>
-                            ))}
-                        </div>
-                    </div>
-                </>
-            )}
-            <div className="board">
-                {terrain.map((row, x) =>
-                    row.map((terrainType, y) => (
-                        <div
-                            key={`${x}-${y}`}
-                            className={`cell terrain-${terrainType} ${board[x][y] ? `player-${board[x][y].player}` : ''}`}
-                            draggable={phase === 'playing' && board[x][y]?.player === player && turn === player && terrainType !== 1}
-                            onDragStart={(e) => handleDragStart(e, x, y)}
-                            onDrop={(e) => handleDrop(e, x, y)}
-                            onDragOver={handleDragOver}
-                            onDragEnter={(e) => handleDragEnter(e, x, y)}
-                            onDragLeave={handleDragLeave}
-                            data-x={x}  // Added for animation targeting
-                            data-y={y}  // Added for animation targeting
-                        >
-                            {board[x][y] ? pieceIcons[board[x][y].type] : ''}
-                        </div>
-                    ))
-                )}
             </div>
+
             {overlayVisible && (
                 <div className="overlay">
                     <h2>{pieceInfo[selectedPiece.type].name}</h2>

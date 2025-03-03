@@ -1,9 +1,18 @@
 import React from 'react';
 import './PieceInfoSidebar.css';
 
-const PieceInfoSideBar = ({ player, capturedPieces, pieceInfo, pieceIcons, turn, hoveredPiece }) => {
+
+const PieceInfoSideBar = ({ player, capturedPieces, pieceInfo, pieceIcons, turn, turnTimeLeft, hoveredPiece }) => {
     return (
         <div className="piece-info-sidebar">
+            <div className={`turn-indicator player-${turn}`}>
+                <p>Player {turn}'s Turn</p>
+                {turn === player && (
+                    <p className={turnTimeLeft <= 10 ? 'time-low' : ''}>
+                        Time left: {turnTimeLeft} seconds
+                    </p>
+                )}
+            </div>
             {/* Captured Pieces Section */}
             <div className="captured-section">
                 <h3>Captured Pieces</h3>

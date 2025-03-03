@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import WelcomePage from './WelcomePage';
 import Game from './Game';
-import './App.css';
 
 const socket = io('http://localhost:3000');
 
