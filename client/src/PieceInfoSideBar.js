@@ -42,9 +42,9 @@ const PieceInfoSideBar = ({ player, capturedPieces, pieceInfo, pieceIcons, turn,
                 <p>Hover over a piece to see details.</p>
                 {hoveredPiece && (
                     <div className="piece-details">
-                        <h4>{pieceInfo[hoveredPiece.type].name}</h4>
-                        <p>{pieceInfo[hoveredPiece.type].description}</p>
-                        <p><strong>Moves:</strong> {pieceInfo[hoveredPiece.type].moves}</p>
+                        <h4>{pieceInfo[hoveredPiece?.type]?.name}</h4>
+                        <p>{pieceInfo[hoveredPiece?.type]?.description}</p>
+                        <p><strong>Moves:</strong> {pieceInfo[hoveredPiece.type]?.moves}</p>
                     </div>
                 )}
             </div>

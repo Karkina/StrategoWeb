@@ -5,31 +5,32 @@ import PieceInfoSideBar from './PieceInfoSideBar';
 
 const socket = io('http://localhost:3000');
 
+// Piece icons for visual representation
 const pieceIcons = {
-    flag: '🚩',
-    marshal: '🎖️',
-    spy: '🕵️',
+    queen: '👑',
+    guard: '🛡️',
+    cavalry: '🐎',
     scout: '🏃',
-    miner: '⛏️',
-    bomb: '💣',
-    unknown: '❓',
-};
-const initialPieces = {
-    flag: 1,
-    marshal: 1,
-    spy: 1,
-    scout: 2,
-    miner: 2,
-    bomb: 2,
+    disruptor: '🔧',
+    unknown: '❓'
 };
 
+// Initial pieces available for placement per player
+const initialPieces = {
+    queen: 1,
+    guard: 3,
+    cavalry: 2,
+    scout: 2,
+    disruptor: 1
+};
+
+// Piece information for sidebar and overlay
 const pieceInfo = {
-    flag: { name: 'Flag', description: 'Capture this to win!', moves: 'Cannot move' },
-    marshal: { name: 'Marshal', description: 'Strongest piece, rank 10', moves: 'One square' },
-    spy: { name: 'Spy', description: 'Can defeat Marshal if attacking', moves: 'One square' },
-    scout: { name: 'Scout', description: 'Fast mover, rank 2', moves: 'Any straight line' },
-    miner: { name: 'Miner', description: 'Defuses bombs, rank 3', moves: 'One square' },
-    bomb: { name: 'Bomb', description: 'Destroys most attackers', moves: 'Cannot move' },
+    queen: { name: 'Queen', description: 'Moves once every two turns, up to 3 spaces. Boosts nearby allies.', moves: 'Up to 3 spaces every two turns' },
+    guard: { name: 'Guard', description: 'Gains +2 defense when within 2 spaces of the queen. Can intercept attacks.', moves: 'One square' },
+    cavalry: { name: 'Cavalry', description: 'Moves in an L-shape, can jump over pieces.', moves: 'L-shape (2 then 1 or 1 then 2)' },
+    scout: { name: 'Scout', description: 'Fast mover, can move 2 spaces.', moves: 'Two squares' },
+    disruptor: { name: 'Disruptor', description: 'Cancels queen\'s bonus for one turn within 3 spaces.', moves: 'One square' }
 };
 
 function Game({ lobbyId, player, socket }) {
@@ -53,13 +54,16 @@ function Game({ lobbyId, player, socket }) {
     const [overlayVisible, setOverlayVisible] = useState(false);
     const [selectedPiece, setSelectedPiece] = useState(null);
 
-    // Custom function to get piece icon based on player
+    // Determines the icon to display based on piece ownership and visibility
     const getPieceIcon = (piece) => {
         if (!piece) return '';
-        if (piece.player === 1 && piece.type === 'scout') return 'S'; // Player 1 scouts are "S"
-        return pieceIcons[piece.type];
+        if (piece.player === player) {
+            return pieceIcons[piece.type];
+        }
+        return pieceIcons['unknown'];
     };
 
+    // Handles right-click to show piece details
     const handleContextMenu = (e, piece) => {
         e.preventDefault();
         if (piece) {
@@ -68,6 +72,7 @@ function Game({ lobbyId, player, socket }) {
         }
     };
 
+    // Plays sound effects for game actions
     const playSound = (action) => {
         const soundFiles = {
             place: '/sounds/place.mp3',
@@ -79,6 +84,7 @@ function Game({ lobbyId, player, socket }) {
         audio.play().catch((error) => console.log('Audio play failed:', error));
     };
 
+    // Sets up Socket.IO listeners for real-time updates
     useEffect(() => {
         socket.on('boardUpdate', (newBoard) => setBoard(newBoard));
         socket.on('turnUpdate', (newTurn) => setTurn(newTurn));
@@ -109,6 +115,7 @@ function Game({ lobbyId, player, socket }) {
         };
     }, [player, socket]);
 
+    // Manages turn timer during the playing phase
     useEffect(() => {
         if (phase === 'playing' && turn === player) {
             setTurnTimeLeft(30);
@@ -127,6 +134,7 @@ function Game({ lobbyId, player, socket }) {
         }
     }, [turn, phase, player]);
 
+    // Plays capture sound when pieces are captured
     useEffect(() => {
         if (
             capturedPieces[1].length > prevCapturedLengths.current[1] ||
@@ -140,6 +148,7 @@ function Game({ lobbyId, player, socket }) {
         };
     }, [capturedPieces]);
 
+    // Drag-and-drop handlers
     const handleDragStartPiece = (e, type) => {
         e.dataTransfer.setData('pieceType', type);
     };
@@ -227,15 +236,17 @@ function Game({ lobbyId, player, socket }) {
                     <p>Ready Players: {readyPlayers.join(', ')}</p>
                 </div>
             )}
-            {phase === 'playing' && (<PieceInfoSideBar
-                player={player}
-                capturedPieces={capturedPieces}
-                pieceInfo={pieceInfo}
-                pieceIcons={pieceIcons}
-                turn={turn}
-                turnTimeLeft={turnTimeLeft}
-                hoveredPiece={hoveredPiece}
-            />)}
+            {phase === 'playing' && (
+                <PieceInfoSideBar
+                    player={player}
+                    capturedPieces={capturedPieces}
+                    pieceInfo={pieceInfo}
+                    pieceIcons={pieceIcons}
+                    turn={turn}
+                    turnTimeLeft={turnTimeLeft}
+                    hoveredPiece={hoveredPiece}
+                />
+            )}
             <div className="game-layout">
                 <div className="board-container">
                     <div className="board">
@@ -261,9 +272,7 @@ function Game({ lobbyId, player, socket }) {
                         )}
                     </div>
                 </div>
-
             </div>
-
             {overlayVisible && (
                 <div className="overlay">
                     <h2>{pieceInfo[selectedPiece.type].name}</h2>
