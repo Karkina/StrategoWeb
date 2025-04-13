@@ -218,8 +218,10 @@ const isValidPlacement = (lobby, x, y, playerNumber) => {
   if (lobby.gamePhase !== 'placement' || x < 0 || x >= 7 || y < 0 || y >= 7) return { valid: false, reason: "Not placement phase or out of bounds." };
 
   // Check player-specific rows
-  if (playerNumber === 1 && x > 2) return { valid: false, reason: "Player 1 must place in rows 0-2." };
-  if (playerNumber === 2 && x < 4) return { valid: false, reason: "Player 2 must place in rows 4-6." };
+  // Player 1 (bottom) can place pieces in the bottom two rows (5-6)
+  if (playerNumber === 1 && (x < 5 || x > 6)) return { valid: false, reason: "Player 1 must place in rows 5-6." };
+  // Player 2 (top) can place pieces in the top two rows (0-1)
+  if (playerNumber === 2 && (x < 0 || x > 1)) return { valid: false, reason: "Player 2 must place in rows 0-1." };
 
   // Check terrain (Lakes are impassable)
   if (lobby.terrain[x][y] === TERRAIN_TYPES.LAKE) return { valid: false, reason: "Cannot place on Lake terrain." };
@@ -551,6 +553,8 @@ io.on('connection', (socket) => {
       playerPiecesLeft[type]--; // Decrement count
       lobby.lastMoveTimestamp = Date.now();
       sendUpdates(lobbyId); // Update board for all
+      // Send confirmation to the client that placed the piece
+      socket.emit('placementSuccess', { x, y, type, id: pieceId });
       // No need to send piecesLeftUpdate separately, sendUpdates handles it for placement phase
     } else {
       socket.emit('invalidMove', { message: placementCheck.reason || 'Invalid placement position.' });

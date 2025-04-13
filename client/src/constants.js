@@ -94,3 +94,36 @@ export const generateInitialTerrain = () => {
 };
 
 export const TURN_DURATION = 30; // seconds
+
+// Suggested initial piece placements for each player
+export const suggestedPlacements = {
+  // Player 1 (bottom player) - pieces are placed at the bottom of the board
+  1: [
+    { type: "queen", x: 6, y: 3 },     // Queen in the middle back row
+    { type: "guard", x: 6, y: 2 },     // Guards around the Queen
+    { type: "guard", x: 6, y: 4 },
+    { type: "guard", x: 5, y: 3 },
+    { type: "cavalry", x: 5, y: 1 },   // Cavalry on the flanks
+    { type: "cavalry", x: 5, y: 5 },
+    { type: "scout", x: 5, y: 2 },     // Scouts in the middle
+    { type: "scout", x: 5, y: 4 },
+    { type: "disruptor", x: 6, y: 1 }, // Disruptor on the side
+    { type: "spy", x: 6, y: 5 },       // Spy on the other side
+    { type: "tactician", x: 6, y: 0 }  // Tactician in the corner
+  ],
+  
+  // Player 2 (top player) - pieces are placed at the top of the board
+  2: [
+    { type: "queen", x: 0, y: 3 },     // Queen in the middle front row
+    { type: "guard", x: 0, y: 2 },     // Guards around the Queen
+    { type: "guard", x: 0, y: 4 },
+    { type: "guard", x: 1, y: 3 },
+    { type: "cavalry", x: 1, y: 1 },   // Cavalry on the flanks
+    { type: "cavalry", x: 1, y: 5 },
+    { type: "scout", x: 1, y: 2 },     // Scouts in the middle
+    { type: "scout", x: 1, y: 4 },
+    { type: "disruptor", x: 0, y: 5 }, // Disruptor on the side
+    { type: "spy", x: 0, y: 1 },       // Spy on the other side
+    { type: "tactician", x: 0, y: 6 }  // Tactician in the corner
+  ]
+};
