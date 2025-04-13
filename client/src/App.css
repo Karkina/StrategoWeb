@@ -1,191 +1,467 @@
+/* General App Styling */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  background-color: #eee; /* Lighter background */
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 15px;
+}
+
+.error-message {
+  color: #D8000C;
+  background-color: #FFD2D2;
+  border: 1px solid #D8000C;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.loading-indicator {
+  font-style: italic;
+  color: #555;
+  text-align: center;
+  margin: 20px;
+}
+
+/* Welcome Page Styling */
+.welcome-page {
+  background-color: #fff8e1; /* Cream background */
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 500px;
+  margin: 40px auto;
+}
+
+.welcome-page h1 {
+  color: #8b4513; /* Brown */
+  margin-bottom: 20px;
+}
+
+.welcome-page p {
+  color: #3c2f2f; /* Dark brown text */
+  margin-bottom: 25px;
+}
+
+.lobby-actions {
+  margin: 15px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px; /* Space between elements */
+}
+
+.button {
+  padding: 12px 25px;
+  background-color: #8b4513; /* Brown */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.button:hover:not(:disabled) {
+  background-color: #a0522d; /* Lighter brown */
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.input.lobby-input {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  width: 200px; /* Adjust as needed */
+}
+
+/* Game Container Styling */
 .game-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  background-color: #f0e8d0;
+  background-image: url('../background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   min-height: 100vh;
+  color: #fff;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.game-title {
+  color: #fff;
+  margin-bottom: 20px;
+  font-size: 2.2em;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Layout for Board and Sidebar */
+.game-layout {
+  display: flex;
+  flex-direction: column; /* Default stack layout */
+  align-items: center; /* Center items vertically */
+  gap: 20px; /* Add space between board and sidebar */
+}
+
+@media (min-width: 1024px) {
+  .game-layout {
+    flex-direction: row; /* Side-by-side on larger screens */
+    align-items: flex-start; /* Align items to the top */
+    justify-content: center; /* Center items horizontally */
+  }
+  .board-container {
+    flex-shrink: 0; /* Prevent board from shrinking */
+  }
+  .piece-info-sidebar {
+    max-width: 350px; /* Limit sidebar width */
+    margin-left: 20px; /* Space from board */
+  }
+}
+
+.board-container {
+  /* Styles specific to the board wrapper if needed */
+  padding: 15px;
+  background-color: rgba(200, 169, 126, 0.8); /* Semi-transparent tan background */
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  border: 2px solid #6b4226;
 }
 
 .board {
   display: grid;
-  grid-template-columns: repeat(7, 80px);
-  gap: 2px;
-  margin: 20px;
-  border: 10px solid #8b4513;
+  grid-template-columns: repeat(7, 70px); /* Slightly smaller cells */
+  grid-template-rows: repeat(7, 70px);
+  gap: 3px; /* Slightly larger gap */
+  border: 12px solid #6b4226; /* Darker, thicker wood border */
+  background-color: #a08464; /* Wood grain effect could go here */
+  border-radius: 5px; /* Slight rounding */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
 }
 
-.time-low {
-  color: red;
-  font-weight: bold;
-}
-
+/* Cell Styling */
 .cell {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #3c2f2f;
-  font-size: 36px;
-  transition: transform 0.5s ease, background-color 0.2s ease;
+  border: 1px solid #7d5a3c; /* Slightly darker border */
+  font-size: 36px; /* Larger icons */
   position: relative;
-}
-
-.moving {
-  transform: scale(1.2) rotate(10deg);
-  z-index: 10;
-}
-
-.overlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #fff8e1;
-  padding: 20px;
-  border: 2px solid #8b4513;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  text-align: center;
-}
-
-.overlay h2 {
-  margin: 0 0 10px;
-  color: #8b4513;
-}
-
-.overlay p {
-  margin: 5px 0;
-  color: #3c2f2f;
-}
-
-.overlay button {
-  margin-top: 10px;
-  padding: 5px 15px;
-  background-color: #8b4513;
-  color: white;
-  border: none;
-  border-radius: 5px;
+  transition: all 0.2s ease;
+  background-size: cover; /* Make background images cover */
   cursor: pointer;
 }
 
-.overlay button:hover {
-  background-color: #a0522d;
-}
+/* Terrain Styling (Using Classes) */
+.terrain-plains {
+  background-color: #90ee90;
+  background-image: linear-gradient(to bottom right, #a0f6a0, #70d870);
+} /* Light Green */
 
-/* Highlight valid drop zones */
-.drop-valid {
-  background-color: #ffff00 !important;
-  transform: scale(1.05);
-}
+.terrain-lake {
+  background-color: #add8e6;
+  background-image: linear-gradient(to bottom, #c0e8f6, #8ac8d6);
+  cursor: not-allowed;
+} /* Light Blue */
 
-.terrain-0 {
-  background-color: #00ff00;
-}
+.terrain-throne {
+  background-color: #ffd700;
+  background-image: linear-gradient(to bottom, #ffe740, #ffc700);
+} /* Gold */
 
-.terrain-1 {
-  background-color: #0000ff;
-}
-
-.terrain-2 {
+.terrain-forest {
   background-color: #228b22;
-}
+  background-image: linear-gradient(to bottom, #32ab32, #126b12);
+} /* Forest Green */
 
+.terrain-hills {
+  background-color: #b8860b;
+  background-image: linear-gradient(to bottom, #d8a62b, #986600);
+} /* Dark Goldenrod */
+
+/* Piece Styling */
 .player-1 {
-  color: #ff0000;
-  /* Red text for Player 1 pieces */
-}
+  color: #ff3a3a;
+  text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+  animation: pulse-red 2s infinite alternate;
+} /* Brighter Red with glow */
 
 .player-2 {
-  color: #0000ff;
-  /* Blue text for Player 2 pieces */
+  color: #3a90ff;
+  text-shadow: 0 0 5px rgba(0, 100, 255, 0.5);
+  animation: pulse-blue 2s infinite alternate;
+} /* Brighter Blue with glow */
+
+@keyframes pulse-red {
+  from {
+    text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+  }
+  to {
+    text-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
+  }
 }
 
-/* Style draggable pieces in the reserve */
+@keyframes pulse-blue {
+  from {
+    text-shadow: 0 0 5px rgba(0, 100, 255, 0.5);
+  }
+  to {
+    text-shadow: 0 0 15px rgba(0, 100, 255, 0.8);
+  }
+}
+
+/* Add text-shadow for better visibility */
+.cell .player-1,
+.cell .player-2 {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  font-size: 40px;
+  /* Make pieces larger */
+}
+
+/* Placement Phase Reserve Styling */
+.placement-controls {
+  background-color: rgba(255, 248, 225, 0.85);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border: 2px solid #8b4513;
+  color: #333;
+  text-shadow: none;
+}
+
 .reserve {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  margin: 10px 0;
+  margin: 15px 0;
+  gap: 12px;
+  /* More space between pieces */
 }
 
 .piece-draggable {
   display: inline-flex;
+  /* Use inline-flex for better alignment */
   align-items: center;
   justify-content: center;
   padding: 10px 15px;
-  margin: 5px;
+  /* Slightly larger padding */
   background-color: #8b4513;
   color: white;
   border-radius: 8px;
+  /* More rounded */
   cursor: grab;
-  font-size: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  font-size: 22px;
+  /* Larger font */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.piece-draggable::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.5s;
+}
+
+.piece-draggable:hover::after {
+  left: 100%;
+}
+
+.piece-draggable .count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #fff;
+  color: #8b4513;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .piece-draggable:hover {
   background-color: #a0522d;
-  transform: scale(1.1);
+  transform: translateY(-3px) scale(1.05);
+  /* Enhanced lift effect */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 
-.piece-draggable:active {
-  cursor: grabbing;
-  transform: scale(0.95);
+/* Piece Info Sidebar CSS */
+.piece-info-sidebar {
+  background-color: rgba(232, 228, 216, 0.85);
+  /* Semi-transparent background */
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #8b4513;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  /* Take full width in stacked layout */
+  color: #333;
+  text-shadow: none;
 }
 
-.reserve button {
-  margin: 5px;
-  padding: 5px 10px;
-  background-color: #8b4513;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.reserve button:hover {
-  background-color: #a0522d;
+.piece-info-sidebar h3,
+.piece-info-sidebar h4 {
+  color: #3a5a40;
+  /* Dark Green */
+  margin-top: 0;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #8b4513;
+  padding-bottom: 8px;
 }
 
 .turn-indicator {
-  padding: 10px;
+  padding: 12px 18px;
   color: white;
-  border-radius: 5px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
-.player-1.turn-indicator {
-  background-color: #ff0000;
+.turn-indicator::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shine 2s infinite;
 }
 
-.player-2.turn-indicator {
-  background-color: #0000ff;
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
-.captured-pieces {
+.turn-indicator.player-1 {
+  background: linear-gradient(135deg, #d32f2f, #ff5252);
+} /* Enhanced red gradient */
+
+.turn-indicator.player-2 {
+  background: linear-gradient(135deg, #1976d2, #42a5f5);
+} /* Enhanced blue gradient */
+
+.turn-indicator h3 {
+  margin: 0 0 5px 0;
+  color: white;
+  /* White text */
+  border-bottom: none;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.turn-indicator .timer {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+/* Overlay Styling */
+.overlay {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 250px;
-  padding: 10px;
-  background-color: #f0e8d0;
-  border: 2px solid #8b4513;
-  border-radius: 5px;
-  text-align: left;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  /* Darker semi-transparent background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  /* Padding for smaller screens */
+  backdrop-filter: blur(5px);
+}
+
+.overlay-content {
+  background: linear-gradient(to bottom, #fff8e1, #f5e9c9);
+  /* Gradient cream background */
+  padding: 30px 35px;
+  border: 3px solid #8b4513;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  text-align: center;
+  max-width: 400px;
+  /* Limit max width */
+  width: 90%;
+  /* Responsive width */
+  position: relative;
+  overflow: hidden;
+}
+
+.overlay-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, #8b4513, #d4af37, #8b4513);
+}
+
+.overlay h2 {
+  margin: 0 0 15px;
+  color: #8b4513;
+  font-size: 28px;
+}
+
+.overlay p {
+  margin: 10px 0;
+  color: #3c2f2f;
+  line-height: 1.6;
+}
+
+.overlay button {
+  margin-top: 25px;
+  padding: 12px 25px;
+  background: linear-gradient(to bottom, #8b4513, #6b3000);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.captured-pieces h3 {
-  margin: 0 0 10px;
-  color: #8b4513;
-}
-
-.captured-pieces div {
-  margin: 5px 0;
-}
-
-.captured-pieces span {
-  margin-right: 5px;
-  font-size: 24px;
+.overlay button:hover {
+  background: linear-gradient(to bottom, #a0522d, #8b4513);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
