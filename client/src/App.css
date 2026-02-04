@@ -7,6 +7,57 @@
   min-height: 100vh;
 }
 
+.welcome-page {
+  text-align: center;
+  padding: 20px;
+}
+
+.welcome-actions {
+  margin: 20px 0;
+}
+
+.lobby-input {
+  padding: 10px;
+  margin-right: 10px;
+  min-width: 220px;
+}
+
+.faction-choice {
+  margin: 15px auto 25px;
+  padding: 10px 15px;
+  background: #fff7e0;
+  border: 2px solid #8b4513;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.rules-choice {
+  margin: 10px auto 20px;
+}
+
+.rules-option {
+  font-weight: 600;
+}
+
+.rules-option input {
+  margin-right: 8px;
+}
+
+.rules-note {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #5b4a2f;
+}
+
+.faction-option {
+  margin: 0 10px;
+  font-weight: 600;
+}
+
+.faction-option input {
+  margin-right: 6px;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(7, 80px);
@@ -136,4 +187,13 @@
 .captured-pieces span {
   margin-right: 5px;
   font-size: 24px;
+}
+
+.ability-panel {
+  margin: 10px 0 15px;
+  padding: 8px 12px;
+  border: 2px solid #8b4513;
+  border-radius: 6px;
+  background-color: #fff7e0;
+  text-align: center;
 }

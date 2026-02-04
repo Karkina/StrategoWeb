@@ -10,12 +10,22 @@ function App() {
   const [page, setPage] = useState('welcome');
   const [lobbyId, setLobbyId] = useState(null);
   const [player, setPlayer] = useState(null);
+  const [factionId, setFactionId] = useState('humans');
+  const [rules, setRules] = useState({ factionAbilities: false });
 
   useEffect(() => {
-    socket.on('assignPlayer', ({ lobbyId, playerNumber }) => {
+    socket.on('assignPlayer', ({ lobbyId, playerNumber, factionId }) => {
       setLobbyId(lobbyId);
       setPlayer(playerNumber);
+      if (factionId) {
+        setFactionId(factionId);
+      }
       setPage('game');
+    });
+    socket.on('rulesInfo', (rulesInfo) => {
+      if (rulesInfo) {
+        setRules(rulesInfo);
+      }
     });
     socket.on('error', (message) => {
       alert(message);
@@ -30,21 +40,33 @@ function App() {
       socket.off('assignPlayer');
       socket.off('error');
       socket.off('playerDisconnected');
+      socket.off('rulesInfo');
     };
   }, []);
 
   const createLobby = () => {
-    socket.emit('createLobby');
+    socket.emit('createLobby', { factionId, rules });
   };
 
   const joinLobby = (lobbyId) => {
-    socket.emit('joinLobby', lobbyId);
+    socket.emit('joinLobby', { lobbyId, factionId });
   };
 
   return (
     <div className="game-container">
-      {page === 'welcome' && <WelcomePage createLobby={createLobby} joinLobby={joinLobby} />}
-      {page === 'game' && <Game lobbyId={lobbyId} player={player} socket={socket} />}
+      {page === 'welcome' && (
+        <WelcomePage
+          createLobby={createLobby}
+          joinLobby={joinLobby}
+          factionId={factionId}
+          setFactionId={setFactionId}
+          rules={rules}
+          setRules={setRules}
+        />
+      )}
+      {page === 'game' && (
+        <Game lobbyId={lobbyId} player={player} socket={socket} factionId={factionId} rules={rules} />
+      )}
     </div>
   );
 }

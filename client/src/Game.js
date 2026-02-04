@@ -4,28 +4,54 @@ import './App.css';
 
 const socket = io('http://localhost:3000');
 
-const pieceIcons = {
-    flag: '🚩',
-    marshal: '🎖️',
-    spy: '🕵️',
-    scout: '🏃',
-    miner: '⛏️',
-    bomb: '💣',
-    unknown: '❓',
+const FACTIONS = {
+    humans: {
+        name: 'Humans',
+        units: [
+            { type: 'banner', name: 'Banner', role: 'flag', count: 1, icon: '🚩' },
+            { type: 'commander', name: 'Commander', role: 'marshal', count: 1, icon: '🛡️' },
+            { type: 'spy', name: 'Spy', role: 'spy', count: 1, icon: '🕵️' },
+            { type: 'ranger', name: 'Ranger', role: 'scout', count: 2, icon: '🏹' },
+            { type: 'sapper', name: 'Sapper', role: 'miner', count: 2, icon: '⛏️' },
+            { type: 'trap', name: 'Trap', role: 'bomb', count: 2, icon: '🧨' },
+        ],
+    },
+    orcs: {
+        name: 'Orcs',
+        units: [
+            { type: 'totem', name: 'Totem', role: 'flag', count: 1, icon: '🏴' },
+            { type: 'warlord', name: 'Warlord', role: 'marshal', count: 1, icon: '⚔️' },
+            { type: 'stalker', name: 'Stalker', role: 'spy', count: 1, icon: '🥷' },
+            { type: 'raider', name: 'Raider', role: 'scout', count: 2, icon: '🐺' },
+            { type: 'demolisher', name: 'Demolisher', role: 'miner', count: 2, icon: '🪓' },
+            { type: 'bomb', name: 'Bomb', role: 'bomb', count: 2, icon: '💣' },
+        ],
+    },
 };
 
-const initialPieces = {
-    flag: 1,
-    marshal: 1,
-    spy: 1,
-    scout: 2,
-    miner: 2,
-    bomb: 2,
+const buildPieceIcons = () => {
+    const icons = { unknown: '❓' };
+    Object.values(FACTIONS).forEach((faction) => {
+        faction.units.forEach((unit) => {
+            icons[unit.type] = unit.icon;
+        });
+    });
+    return icons;
 };
 
-function Game({ lobbyId, player, socket }) {
+const pieceIcons = buildPieceIcons();
+
+const buildPiecesLeft = (units) => {
+    const pieces = {};
+    units.forEach((unit) => {
+        pieces[unit.type] = unit.count;
+    });
+    return pieces;
+};
+
+function Game({ lobbyId, player, socket, factionId, rules }) {
     const [board, setBoard] = useState(Array(7).fill(null).map(() => Array(7).fill(null)));
-    const [terrain] = useState(() => {
+    const [terrain, setTerrain] = useState(() => {
         const grid = Array(7).fill(null).map(() => Array(7).fill(0));
         grid[3][0] = 1; grid[3][2] = 1; grid[3][4] = 1; grid[3][6] = 1;
         grid[3][1] = 0; grid[3][3] = 0; grid[3][5] = 0;
@@ -36,8 +62,18 @@ function Game({ lobbyId, player, socket }) {
     const [turn, setTurn] = useState(1);
     const [phase, setPhase] = useState('placement');
     const [readyPlayers, setReadyPlayers] = useState([]);
-    const [piecesLeft, setPiecesLeft] = useState({ ...initialPieces });
+    const [playerFactionId, setPlayerFactionId] = useState(factionId || 'humans');
+    const [factionUnits, setFactionUnits] = useState(FACTIONS[factionId || 'humans'].units);
+    const [piecesLeft, setPiecesLeft] = useState(buildPiecesLeft(FACTIONS[factionId || 'humans'].units));
     const [capturedPieces, setCapturedPieces] = useState({ 1: [], 2: [] });
+    const [rulesState, setRulesState] = useState(rules || { factionAbilities: false });
+    const [abilityUsed, setAbilityUsed] = useState({ marshalSwap: false, warlordRoar: false });
+
+    useEffect(() => {
+        if (rules) {
+            setRulesState(rules);
+        }
+    }, [rules]);
 
     useEffect(() => {
         socket.on('boardUpdate', (newBoard) => setBoard(newBoard));
@@ -45,10 +81,46 @@ function Game({ lobbyId, player, socket }) {
         socket.on('piecesLeftUpdate', (newPiecesLeft) => {
             setPiecesLeft(newPiecesLeft);
         });
+        socket.on('rulesInfo', (rulesInfo) => {
+            if (rulesInfo) {
+                setRulesState(rulesInfo);
+            }
+        });
+        socket.on('abilityUpdate', ({ rules, abilityUsed }) => {
+            if (rules) {
+                setRulesState(rules);
+            }
+            if (abilityUsed) {
+                setAbilityUsed(abilityUsed);
+            }
+        });
+        socket.on('factionInfo', ({ factionId: incomingFactionId, units }) => {
+            const normalizedFactionId = incomingFactionId && FACTIONS[incomingFactionId] ? incomingFactionId : 'humans';
+            const normalizedUnits = units && units.length ? units : FACTIONS[normalizedFactionId].units;
+            setPlayerFactionId(normalizedFactionId);
+            setFactionUnits(normalizedUnits);
+            setPiecesLeft(buildPiecesLeft(normalizedUnits));
+        });
+        socket.on('terrainUpdate', ({ x, y, terrainType }) => {
+            setTerrain((prev) => {
+                const next = prev.map((row) => row.slice());
+                if (next[x] && typeof next[x][y] !== 'undefined') {
+                    next[x][y] = terrainType;
+                }
+                return next;
+            });
+        });
+        socket.on('terrainReset', (newTerrain) => {
+            if (Array.isArray(newTerrain)) {
+                setTerrain(newTerrain.map((row) => row.slice()));
+            }
+        });
         socket.on('phaseUpdate', (newPhase) => {
             setPhase(newPhase);
             if (newPhase === 'placement') {
-                setPiecesLeft({ ...initialPieces });
+                if (factionUnits.length) {
+                    setPiecesLeft(buildPiecesLeft(factionUnits));
+                }
                 setReadyPlayers([]);
             }
         });
@@ -62,9 +134,13 @@ function Game({ lobbyId, player, socket }) {
             socket.off('readyUpdate');
             socket.off('capturedUpdate');
             socket.off('gameOver');
+            socket.off('factionInfo');
+            socket.off('rulesInfo');
+            socket.off('abilityUpdate');
+            socket.off('terrainUpdate');
+            socket.off('terrainReset');
         };
-
-    }, [socket]);
+    }, [socket, factionUnits]);
 
     const handleDragStartPiece = (e, type) => {
         e.dataTransfer.setData('pieceType', type);
@@ -121,22 +197,34 @@ function Game({ lobbyId, player, socket }) {
     return (
         <div className="game-container">
             <h1>Mini-Stratego - Lobby: {lobbyId}</h1>
+            <p>Faction: <strong>{FACTIONS[playerFactionId]?.name || 'Humans'}</strong></p>
+            <div className="ability-panel">
+                <p><strong>Faction Abilities:</strong> {rulesState.factionAbilities ? 'Enabled' : 'Disabled'}</p>
+                {rulesState.factionAbilities && playerFactionId === 'humans' && (
+                    <p>Commander Swap: {abilityUsed.marshalSwap ? 'Used' : 'Ready'}</p>
+                )}
+                {rulesState.factionAbilities && playerFactionId === 'orcs' && (
+                    <p>Warlord Roar: {abilityUsed.warlordRoar ? 'Used' : 'Ready'}</p>
+                )}
+            </div>
             {phase === 'placement' && (
                 <div>
                     <p>Placement Phase: Drag a piece to the board</p>
                     <div className="reserve">
-                        {Object.entries(piecesLeft).map(([type, count]) =>
-                            count > 0 && (
+                        {factionUnits.map((unit) => {
+                            const count = piecesLeft[unit.type] || 0;
+                            if (count <= 0) return null;
+                            return (
                                 <div
-                                    key={type}
+                                    key={unit.type}
                                     draggable
-                                    onDragStart={(e) => handleDragStartPiece(e, type)}
+                                    onDragStart={(e) => handleDragStartPiece(e, unit.type)}
                                     className="piece-draggable"
                                 >
-                                    {pieceIcons[type]} x{count}
+                                    {pieceIcons[unit.type]} {unit.name} x{count}
                                 </div>
-                            )
-                        )}
+                            );
+                        })}
                     </div>
                     <button onClick={handleReady}>Ready</button>
                     <p>Ready Players: {readyPlayers.join(', ')}</p>
